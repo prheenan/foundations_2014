@@ -1,0 +1,24 @@
+*.DS_STORE*
+*~
+*.pdf
+*.csv
+*.png
+*.log
+*.zip
+*.fig
+*.tif
+*.eps
+*.db
+*.rtf
+*.docx
+*.pptx
+*.hg*
+
+# patricks personal ignore... other folders in my foundations folder!
+homework_1/
+homework_2/
+lab3_modeling_difference_statistics/
+lab4_flaxman_p1/
+lab_hough_stats_/
+lab_matlab_image_processing_and_analysis/
+lab_munsky_monte_carlo/

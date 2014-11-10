@@ -1,0 +1,21 @@
+function [ output_args ] = pSubplot(numRows,numCols,row,column,marginX,marginY)
+%PSUBPLOT Summary of this function goes here
+%   Detailed explanation goes here
+defMargin = 0.05;
+if (nargin < 5)
+    marginX = defMargin;
+end
+if (nargin < 6)
+    marginY = defMargin;
+end
+fractionX = 1./numCols;
+fractionY = 1./numRows;
+x = linspace(marginX,1-fractionX,numCols);
+y = linspace(1-fractionY,marginY,numRows);
+
+positionVector1 = [ x(column)+marginX/2,y(row)+marginX/2, ...
+                    fractionX, fractionY];
+subplot('Position',positionVector1)
+
+end
+
