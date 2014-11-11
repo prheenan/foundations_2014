@@ -1,9 +1,9 @@
 clear,clc
 addpath /Users/chris/Documents/IQ_Bio_core/Lab_report/Lab_report2/from_eric/
 
-w=xlsread('model_values_simple_11092014.xlsx','AA3:AA24');
-exp=xlsread('model_values_simple_11092014.xlsx','AB3:AB24');
-s=xlsread('model_values_simple_11092014.xlsx','C3:W24');
+w=xlsread('model_values_simple_11092014.xlsx','AB3:AB26');
+exp=xlsread('model_values_simple_11092014.xlsx','AC3:AC26');
+s=xlsread('model_values_simple_11092014.xlsx','C3:X26');
 
 % d(:,:,1)=xlsread('Inhib Values.xlsx','0hr','B3:K26');
 % d(:,:,2)=xlsread('Inhib Values.xlsx','0hr','M3:V26');
