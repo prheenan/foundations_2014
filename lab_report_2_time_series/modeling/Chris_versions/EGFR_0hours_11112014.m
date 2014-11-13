@@ -26,11 +26,11 @@ TGFa = 100;
 actTGFa = 0;
 actTGFa_EGFR = 0;
 TACE = 100;
-Inhib = 95;
+Inhib = 0;
 x = [actEGF	EGFR	actEGF_EGFR	SOS	actSOS	RAS	actRAS	RAF	actRAF	MEK	actMEK	ERK	actERK	ERK_SOS	ERK_RAF	actTACE	EGF	TGFa	actTGFa	actTGFa_EGFR    TACE    Inhib];
 
 %Running simulation
-steps = 4000; %number of reps in simulation
+steps = 3000; %number of reps in simulation
 no_inhib = zeros(steps,length(x)); 
 times = zeros(1, steps);
 new_data = x;
@@ -45,14 +45,14 @@ for i=2:steps;
     times(i) = i;
 end;
 
-no_inhib
-
-    %concentration vs time
-plot(times, no_inhib(:,1), times, no_inhib(:,13) );
-set(gca,'XScale','log');
-ylabel('Concentration (Molecules)');
-xlabel('Iteration #');
-legend('active EGF', 'active ERK');
+%     concentration vs time
+% figure;
+% subplot(2,1,1);
+% plot(times, no_inhib(:,1), times, no_inhib(:,13) );
+% set(gca,'XScale','log');
+% ylabel('Concentration (Molecules)');
+% xlabel('Iteration #');
+% legend('active EGF', 'active ERK');
 
 
 
@@ -115,16 +115,6 @@ for inhib=1:100 % for 100 different concentrations of inhibitor
     inhib
 end
 
-inhibitor = 90;
-figure;
-subplot(2,1,1);
-plot(times, my_data(inhibitor,:, 1), times, my_data(inhibitor,:,13),'r.');
-set(gca,'XScale','log');
-set(gca,'YScale','log');
-ylabel('Concentration (Molecules)');
-xlabel('Iteration #');
-legend('active EGF', 'active ERK');
-
 
 %getting IC50s. 
 IC50s = zeros(steps, 1);
@@ -136,14 +126,22 @@ for i=1:steps
         %now, want the concentration of inhibitor to bring act ERK below
         %"half"
         inhib_ERK = my_data(inhib, i, 13);
-        if IC50_at_this_time ==0;
+        if IC50_at_this_time == 0;
             if inhib_ERK <= half;
-                IC50_at_this_time = inhib_ERK;
+                IC50_at_this_time = inhib;
             end
         end
     end
     IC50s(i) = IC50_at_this_time;
 end
+
+figure;
+subplot(2,1,1);
+plot(times, my_data(50, :, 13), 'r.', times, my_data(50, :, 1), 'b.' );
+set(gca,'XScale','log');
+ylabel('Concentration (Molecules)');
+xlabel('Iteration #');
+legend('active EGF', 'active ERK');
 
 subplot(2,1,2);
 plot(IC50s,'r.')
