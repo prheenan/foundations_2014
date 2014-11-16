@@ -11,7 +11,6 @@ function [  ] = lab1(  )
         inhib_pM(i) = inhib_pM(i+1)/2;
     end
     numPoints = numel(egf_pM);
-
     % the folder relative to the matlab workspace where the images live
     baseFolder='fall_2014/foundations_phys_7000_code/lab_report_1_egf/';
     % get the blanks for flatfield correction; average them!

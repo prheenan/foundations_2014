@@ -60,7 +60,7 @@ function [IC50,EC50Std] = normalizeAndPlot_lab1(egf_pM,ints,stdev,saveLoc,titleS
     grid minor;
     set(ax,'XScale','log');
     % save it to the output file.
-    saveas(f,[saveLoc '.png'])
+    saveFigure(f,saveLoc)
     close(f)
 end
 
