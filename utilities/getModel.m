@@ -1,9 +1,10 @@
 function [beta,ci,RSQ,R] = getModel(x,y,model,init)
     optimize = @(paramValues) (y - model(paramValues,x));
+    options = optimset('Display','off');
     if (numel(init) == 1)
-        [beta,~,R,~,~,~,J] =lsqnonlin(optimize,init(1));
+        [beta,~,R,~,~,~,J] =lsqnonlin(optimize,init(1),options);
     else        
-        [beta,~,R,~,~,~,J] =lsqnonlin(optimize,mean(init),init(1),init(2));
+        [beta,~,R,~,~,~,J] =lsqnonlin(optimize,mean(init),init(1),init(2),options);
     end
     ci = -1;
     RSQ = 0;

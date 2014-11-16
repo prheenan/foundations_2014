@@ -1,8 +1,9 @@
-function [  ] = lab2_func(baseFolder,imageFolder,outputFolder,lastTime,wellNumbers,wells,centroids)
+function [ timeCourseIC50s_mean_stdev_times ] = lab2_func(baseFolder,imageFolder, ...
+    outputFolder,numTimes,wellNumbers,wells,centroids,frameRate,frameRateUnits)
 
     numSites = 4;
     numWavelengths = 2;
-    plotStruct = {'FontSize',16};
+    plotStruct = {};
     % get the blanks for flatfield correction; average them!
     % create the directories if they dont exist
     ensureDirExists(baseFolder);
@@ -16,12 +17,19 @@ function [  ] = lab2_func(baseFolder,imageFolder,outputFolder,lastTime,wellNumbe
     dirs = listSubDirectories(imageFolder);
     % get the blanks for all wavelengths and times
     blanks = getBlanks( imageFolder,blankWells,dirs,...
-                        lastTime, numWavelengths);
+                        numTimes, numWavelengths);
+    % start at time 1, consider this time 0
+    % this is from correspondence with Eric Bunker, 11/6/2014:
+    % "First timepoint of the image files is just before adding
+    % inhibitor/egf (0hr) or just before adding inhibitor (6hr)."
+    % The second timepoint I considered 0 minutes as I started it as soon 
+    % as I'd pipetted everything in.
     startTime = 1;
-    timesAvg = (startTime:lastTime)';   
+    timesAvg = (0:numTimes-1)' .* frameRate;   
 
     numInhibitors = numel(wells);
     numConcs = numel(wellNumbers);
+    % all inhibitor concentrations in pM
     inhibitors = [
     0	156.25      312.5       625     	1250	2500	5000	10000	20000	40000;   
     0	156.25      312.5       625         1250	2500	5000	10000	20000	40000;
@@ -42,8 +50,9 @@ function [  ] = lab2_func(baseFolder,imageFolder,outputFolder,lastTime,wellNumbe
    regexFormatted='site %1d wavelength %1d t%02d.tif';
    % first column is mean, second is stdev
    steadyStateIC50s_mean_stdev = zeros(numInhibitors,2);
-
-   for inhib=1:numInhibitors
+   timeCourseIC50s_mean_stdev_times= (-1 .* ones(numInhibitors,numTimes,3));
+   
+   parfor inhib=1:numInhibitors
         tmpWell = wells{inhib};
         idString = ['Inhib' num2str(inhib,'%02d') '_well_' tmpWell];
         IC50InhibDir = [ IC50LocBase idString '/'];
@@ -52,9 +61,15 @@ function [  ] = lab2_func(baseFolder,imageFolder,outputFolder,lastTime,wellNumbe
         traceDir = [traceBase idString '/'];
         ensureDirExists(traceDir);
         concFolders = cell(numConcs,1);
+        concLabels = cell(numConcs,1);
+
+        concentrations = inhibitors(inhib,1:numel(wellNumbers)); 
+        
         for conc = 1:numConcs
-            thisConc= [imageFolder getWell(tmpWell,wellNumbers(conc)) '/'];
+            wellName = getWell(tmpWell,wellNumbers(conc));
+            thisConc= [imageFolder wellName '/'];
             concFolders{conc} = thisConc;
+            concLabels{conc} = [idString '_Conc_' num2str( concentrations(conc),'%.5f') '_pM' ];
         end                 
         if (~allDirsExist(concFolders))
             fprintf('Couldn''t find all the folders for inhibitor %d, not bothering...\n',inhib);
@@ -63,87 +78,17 @@ function [  ] = lab2_func(baseFolder,imageFolder,outputFolder,lastTime,wellNumbe
         end
         [meanAllConc,stdevAllConc,centroidStats] = ...
                 allSites(concFolders,outputFolder,regexFormatted, ...
-                blanks, numWavelengths,lastTime,numSites,  0,idString, ...
+                blanks, numWavelengths,numTimes,numSites, startTime,idString, ...
                 initialTime,centroids);
-        IC50s = zeros(lastTime,1);
-        IC50std = zeros(lastTime,1);
-        concentrations = inhibitors(inhib,1:numel(wellNumbers)); %#ok<PFBNS>
-        
-        for t = timesAvg'
-            % get the mean and stdev across all concentrations...
-            means = meanAllConc(t,:);
-            stdevs = stdevAllConc(t,:);    
-            
-            titlePlot = ['IC50 for ' idString ' at time ' num2str(t-1,'%2d') ];
-            saveName = [IC50InhibDir 'Time_' num2str(t-1,'%02d')];
-           [ IC50s(t) , IC50std(t)] = normalizeAndPlot_lab1(concentrations,means,stdevs,...
-                saveName,titlePlot,true,'Inhibitor');
-        end
-        reset(gca);
-        close all;
-        clf;
-        fig = figure('Position',[0,0,1200,1000],'Visible','Off');
-        numPlots =3;
-        plotCounter = 1;
-        surfAx = subplot(numPlots,1,plotCounter)
-        goodIndices= (IC50s > 0);
-        IC50s = IC50s(goodIndices);
-        IC50std = IC50std(goodIndices);
-        timesIC50 = timesAvg(goodIndices); 
-        [timeGrid,concGrid] = meshgrid(timesAvg,concentrations);
-        surf(timeGrid,concGrid,meanAllConc');
-        set(gca, 'ZScale', 'log');
-        colormap(surfAx,hot);
-        xlabel('Time (Frames)',plotStruct{:}); %#ok<PFBNS>
-        ylabel('Concentrations (pM)',plotStruct{:});
-        zlabel('Activity (au)',plotStruct{:});
-        title('FRET/CFP versus time and concentration',plotStruct{:});
-        plotCounter = plotCounter + 1;
-        
-        subplot(numPlots,1,plotCounter);
-        
-        errorbar(timesIC50,IC50s,IC50std,'ro-');
-        xlimits = [ 0.95*min(timesIC50), max(timesIC50)*1.05];
-        xlabel('Time (frame)',plotStruct{:});
-        ylabel('IC50',plotStruct{:}); 
-        title('IC50 (pM) versus Time',plotStruct{:});
-        ax = gca;
-        grid on;
-        grid minor;
-        set(ax,'YScale','log');
-        disp(xlimits);
-        xlim(xlimits);
-        plotCounter = plotCounter + 1;
-                        
-        subplot(numPlots,1,plotCounter);
-        % plot the last half...
-        numPoints = round(numel(IC50s)/2);
-        slice = (numPoints:numel(IC50s));
-        IC50Slice = IC50s(slice);
-        meanIC50Steady = mean(IC50Slice(:));
-        stdIC50Steady = std(IC50Slice(:));
-        steadyStateIC50s_mean_stdev(inhib,:) = [meanIC50Steady, stdIC50Steady];
-        hold all;
-        title(['Equilibrium IC50[pm]:' num2str(meanIC50Steady,'%.2g') '+/-' num2str(stdIC50Steady,'%.2g')]);
-        errorbar(timesIC50(slice),IC50Slice,IC50std(slice),'ro-');
-        axhline(xlimits,meanIC50Steady,'k');
-        axhline(xlimits,meanIC50Steady-stdIC50Steady,'b');
-        axhline(xlimits,meanIC50Steady+stdIC50Steady,'b');
 
-        xlim(xlimits);
-        xlabel('Time (frame)',plotStruct{:});
-        ylabel('IC50',plotStruct{:}); 
-        idIC50Plot =  ['FullIC50Plot' idString];
+        tmp =  ...
+            plotActivity( timesAvg,concentrations, meanAllConc,stdevAllConc, ...
+            IC50InhibDir , outputFolder, frameRateUnits,idString,concLabels  );
+        timeCourseIC50s_mean_stdev_times(inhib,:,:) = tmp;
+        % mean along the rows for the first two columns (mean and stdev) 
+        steadyStateIC50s_mean_stdev(inhib,:) =  ...
+            mean(tmp(:,1:2),1);
         
-        fileName = [IC50InhibDir idIC50Plot];
-        plotCounter = plotCounter + 1;       
-        writeMatrix([fileName '_IC50pM_and_stdevs'],[timesIC50 , IC50s , IC50std],{'Time(frame)','IC50 mean[pM]','IC50 std[pM]'});
-        writeMatrix([fileName '_means_over_t_and_conc'],meanAllConc);
-        writeMatrix([fileName '_stdevs_over_t_and_conc'],stdevAllConc);
-        % save the graph in two places...
-        saveFigure(fig,fileName);
-        saveAndCloseFigure(fig,[outputFolder idIC50Plot]); 
-        clf;
         if (centroids)
             for conc =1:numConcs
                 means = meanAllConc(:,conc);
@@ -164,7 +109,7 @@ function [  ] = lab2_func(baseFolder,imageFolder,outputFolder,lastTime,wellNumbe
                  errorbar(timesAvg,intMean, stdevs,'ro-','LineWidth',2.5);
                  title('Average FRET/CFP Ratio Over time',plotStruct{:});
                  ylabel('FRET/CFP',plotStruct{:});
-                 xlabel('Time (Frame Num)',plotStruct{:});
+                 xlabel(timeStr,plotStruct{:});
                 fprintf('Plotting traces for %s, Time elapsed: %7.3f\n',well,toc(initialTime));
                 siteColors = ['m','g','b','k'];
                 for s=1:numSites
@@ -410,7 +355,7 @@ function [means,stdevs,centroidFinalStats] = allSites(baseFolders,outFolder,...
                 bestK = round(fminbnd(@(x) fitMin(x,XY,numReplications),1,maxCentroids,...
                         optSet));
                 [~,C] = kmeans(XY,bestK,'Display','off','Replicates',...
-                                numReplications*10,'MaxIter',iters*10);
+                                numReplications*20,'MaxIter',iters*10);
                 % search for centroids within 2 * the common distance (ie: 2
                 % diameters away) to collapse them
                 numCentroids = numel(C)/2;

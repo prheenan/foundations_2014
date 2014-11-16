@@ -76,14 +76,11 @@ echo "Using ${NPROCS} processors across ${NNODES} nodes"
 
 ### Or, just run your serial program
 # XXX need to have module loaded...
-workDir="${HOME}/fall_2014/iqbio_lab_inhibitors/"
+workDir="/Users/pahe3165/fall_2014/iqbio_lab_inhibitors/"
 codeDir='labCode/lab_report_2_time_series/'
-code='lab2'
 cd ${workDir}
 cd ${codeDir}
-module load matlab_R2013b
-set -x
-matlab -nodisplay -nosplash -nodesktop -r "${code}" || echo "Couldn't run Matlab...";
+matlab -nodesktop -nosplash -nodisplay -logfile ${logDir}RunDebugS -r lab2
 
 
 # PBS environment variables available in every batch job:

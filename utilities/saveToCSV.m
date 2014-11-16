@@ -1,5 +1,11 @@
 function [] = saveToCSV(fullPath,cellMatrices,headerCell, ...
                         averageValues,headerAverage)
+if (nargin < 4)
+    averageValues = [0];
+end
+if (nargin < 5)
+   headerAverage = 'empty';
+end
 % open the file in write and text mode
 fid = fopen(fullPath,'wt');
 % get the number of columns (each cell value is a column, different cell)
