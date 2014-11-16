@@ -1,11 +1,27 @@
 
 %%%%%%%%%%%% first, plot for 0 inhibitor
 
+%instructions for changing inhibitor target (need to automate this soon):
+   % #1, change the stoichiometry in ode_fun_v2.m (forgot this in the past)
+   % #2, change the stoichiometry in the excel file model values simple
+   % #3, change plot titles at the bottom of this file
+
+%note: can't increase concentration of inhibitor above 100, or else get
+%negative concentrations
+
+%note: can't increase inhibition rate above certain amount, around .1 ish,
+%or else get negative concentrations
+
+%note: inhibition rate of 0.01 gets a dip in IC50 for EGF inhibitor, and
+%good activity of time. + or - doesn't help.
+
+
+
 %calling load excel script
 LoadExcel_v2_11092014
 
 %initial concentrations
-actEGF = 0;
+actEGF = 100;
 EGFR = 100;
 actEGF_EGFR = 0;
 SOS	= 100;
@@ -20,8 +36,8 @@ ERK	= 100;
 actERK = 0;
 ERK_SOS = 0;
 ERK_RAF = 0;
-actTACE = 10; %need some to start with, or else EGF not cleaved
-EGF = 100;
+actTACE = 0; %need some to start with, or else EGF not cleaved
+EGF = 0;
 TGFa = 100;
 actTGFa = 0;
 actTGFa_EGFR = 0;
@@ -67,7 +83,7 @@ end;
 %LoadExcel_v2_11092014
 
 %initial concentrations
-actEGF = 0;
+actEGF = 100;
 EGFR = 100;
 actEGF_EGFR = 0;
 SOS	= 100;
@@ -82,8 +98,8 @@ ERK	= 100;
 actERK = 0;
 ERK_SOS = 0;
 ERK_RAF = 0;
-actTACE = 10; %need some to start with, or else EGF not cleaved
-EGF = 100;
+actTACE = 0; %need some to start with, or else EGF not cleaved
+EGF = 0;
 TGFa = 100;
 actTGFa = 0;
 actTGFa_EGFR = 0;
@@ -99,7 +115,7 @@ my_data = zeros(100, steps, 22);
 %simulation
 for inhib=1:100 % for 100 different concentrations of inhibitor
     %setting inhib concentration added
-    Inhib = inhib;
+    Inhib = inhib; %don't add more than 100 inhibitor, or else get negative EGF
     x = [actEGF	EGFR	actEGF_EGFR	SOS	actSOS	RAS	actRAS	RAF	actRAF	MEK	actMEK	ERK	actERK	ERK_SOS	ERK_RAF	actTACE	EGF	TGFa	actTGFa	actTGFa_EGFR    TACE    Inhib];
     %storing data for plots here
     stored_data = zeros(steps,length(x)); %update with number of different molecules 
@@ -120,7 +136,9 @@ end
 IC50s = zeros(steps, 1);
 for i=1:steps
     IC50_at_this_time = 0;
+    concentrations = zeros(1,100); %storing concentrations for plotting
     for inhib=1:100
+        concentrations(inhib) = inhib;
         actERK = no_inhib(i,13);
         half = actERK/2;
         %now, want the concentration of inhibitor to bring act ERK below
@@ -141,14 +159,36 @@ plot(times, my_data(50, :, 13), 'r.', times, my_data(50, :, 1), 'b.' );
 set(gca,'XScale','log');
 ylabel('Concentration (Molecules)');
 xlabel('Iteration #');
-legend('active EGF', 'active ERK');
+legend('active ERK', 'active EGF');
 
 subplot(2,1,2);
-plot(IC50s,'r.')
+plot(IC50s/100,'r.')
 set(gca,'XScale','log');
-ylabel('ERK by EGFR-inhibitor IC50');
+title('TACE inhibitor')
+ylabel('IC50 (molecules Inhibitor/EGF)');
 xlabel('Iteration #');
 
+figure;
+colors = colormap(winter(100));
+set(gca, 'ColorOrder', colors);
+hold all;
+for i = 1:100
+  plot( times, my_data(i, :, 13)/100 );
+end
+legend('Inhibitor concentration increases from blue to green')
+title('TACE inhibitor')
+ylabel('ERK activity (molecules ERK/EGF)');
+xlabel('Iteration #');
 
-
+figure;
+colors = colormap(autumn(100));
+set(gca, 'ColorOrder', colors);
+hold all;
+for i = 1:30:3000
+  plot(concentrations, my_data(:, i, 13)/100 );
+end
+legend('Time increases from red to yellow')
+title('TACE inhibitor')
+ylabel('ERK activity (molecules ERK/EGF)');
+xlabel('Inhubitor concentration (molecules)');
 
