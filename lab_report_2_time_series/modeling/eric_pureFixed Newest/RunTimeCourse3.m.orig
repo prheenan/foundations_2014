@@ -1,0 +1,133 @@
+function [] = RunTimeCourse3()
+
+    clear,clc
+    close all;
+    prheenan_global_defines
+    %whether or not to force manual recalc
+    force = true;
+    [conc,params,initial_conditions,~,ERKt] = loadConcs();
+
+    equ_fract=.21;
+    egf_fract=.48;
+
+    %Load model values
+    inhibitorLabels = {'B','C','D','E','F','G'};
+    % one for EQ, ten for concs.
+    course=[1:11];
+    time_course=0:360;
+    EGF_conc=100;
+    % when to add egf
+    te=10;
+    tp=10;
+    % when to perturb the system.
+    conc2=conc(:,1);
+    %%
+
+    numTimes = numel(time_course);
+    numSpecies = numel(initial_conditions);
+    numTrials = numel(course);
+
+    for inhibitor=1:6
+        inhibitorRow = inhibitorLabels{inhibitor};
+        idStr = ['Inhibitor#' num2str(inhibitor) ' Row' inhibitorRow];
+        toSave = [timeCourseDir timeCourse3FileSave idStr '.mat'];
+        y_vals= getOdeConc(params,initial_conditions,...
+                EGF_conc,time_course,te,tp,conc,toSave,force,numTimes, ...
+                numSpecies,numTrials,course,inhibitor);
+            %%
+            % XXX for now, just get the 0hr ys...
+        save(toSave);
+        fig1 = figure('Visible','Off');
+        labels = cell(1,numTrials+1);
+        hold all;
+        ErkToPlot = reshape(y_vals(:,11,:),numTimes,numTrials);
+        ax = subplot(1,1,1);
+        % go through each trial (including an eq one) and plot
+         cmap = colormap(hsv(numTrials));
+         % add a single line for the (shared) status before perturbation
+        plot(time_course(1:tp),ErkToPlot(1:tp,2),'r--');
+        labels{1} = 'ERK(t < T_p) (shared)';
+        for i=1:numTrials
+            if i==1
+                plot(time_course,ErkToPlot(:,i),'k');
+                labels{i+1} = 'eq (no inhib or EGF)';
+            else
+                plot(time_course(tp:end),ErkToPlot(tp:end,i),'-','Color',cmap(i,:))
+                labels{i+1} = [ num2str(conc(inhibitor,i-1),'%5.2f') 'pM']; 
+            end
+        end
+        % add legends and a time showing the perturbation time T_p
+        line([tp,tp],get(gca,'Ylim'),'color','k','linestyle','--')
+        legend(labels{:},['T_p=' num2str(tp,'%d')],'Location','eastoutside');
+        xlabel('Time (arb)',plotStruct{:});
+        ylabel('active ERK (arb)',plotStruct{:});
+        title(['Equilibrium ERK activity is dependent on ' idStr ' at T_p'],plotStruct{:}) 
+        saveFigure(fig1,[timeCourseDir 'fig1.ERK_V_time_' idStr]);
+        %% 
+        fig2 = figure('Visible','Off');
+        hold all
+        plot(time_course,ErkToPlot(:,1),'b')
+        plot(time_course,ErkToPlot(:,2),'g')
+        line(get(gca,'Xlim'),[ERKt*equ_fract ERKt*equ_fract],'color','k','linestyle','--')
+        line(get(gca,'Xlim'),[ERKt*egf_fract ERKt*egf_fract],'color','k','linestyle',':')
+        xlabel('time (arb)',plotStruct{:})
+        ylabel('erk activity (arb)',plotStruct{:});
+        set(ax,'XScale','log');
+        legend('equ simulation','EGF simulation','equilibrium','100pM egf',...
+            'Location','East')
+        saveFigure(fig2,[timeCourseDir 'fig1.ERK_V_timeII_' idStr]);
+        %toc
+        %% plot just the EGF in the first and second trials
+
+        vis=17;
+        fig3 = figure('Visible','Off');
+        % equilibrium
+        plot(time_course,y_vals(:,vis,1),'b')
+        hold all
+        % egf (should skyrocket)
+        plot(time_course,y_vals(:,vis,2),'g')
+        xlabel('time (arb)',plotStruct{:});
+        ylabel('EGF (arb)',plotStruct{:})
+        saveFigure(fig3,[timeCourseDir 'fig3.EGF_timeII_' idStr]);
+
+        %time_course = 0:801;
+        %tp=1;te=500;
+        %res=fminsearch(@(params) func3_fmin(params,initial_conditions,EGF_conc,inhib,time_course,te,tp,fract,tf),params,opts);
+
+
+    end
+
+end
+
+function [y_vals] = getOdeConc(params,initial_conditions,...
+                EGF_conc,time_course,te,tp,conc,toSave,force,...
+                numTimes,numSpecies,numTrials,course,inhibitor)
+    if (fileExists(toSave) && ~force)
+        load(toSave);
+        fprintf('Found file %s. \n',toSave);
+    else
+        fprintf('Couldnt find file %s. \nGoing to re-calculate everything.\n',toSave);
+        % y_vals needs data for each time, species, trial, and
+        % perturbation time (ie: 0 and 2 hours)
+        y_vals = zeros(numTimes,numSpecies,numTrials);
+        waitb=waitbar(0);
+        courseNum = 1;
+        for i=course
+            waitb=waitbar(i/11,waitb,int2str(i));
+            inhib=[1,1];
+            conc2=conc(:,1);
+            if i==1
+                EGF_conc=0;
+            else
+                inhib=[inhibitor,i-1];
+            end
+            [~, y_vals(:,:,courseNum)]=func2_TimeCourse(params,uint64(initial_conditions),...
+                EGF_conc,inhib,time_course,te,tp,conc,conc2);
+            courseNum = courseNum +1;
+        end
+        close(waitb);
+    end
+end
+
+
+
