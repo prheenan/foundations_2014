@@ -1,4 +1,4 @@
-function [  ] = saveAndCloseFigure(handle,filename)
-    saveFigure(handle,filename);
+function [  ] = saveAndCloseFigure(handle,filename,out)
+    saveFigure(handle,filename,out);
     close(handle);
 end

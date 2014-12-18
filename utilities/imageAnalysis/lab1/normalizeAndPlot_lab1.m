@@ -40,7 +40,7 @@ function [IC50,EC50Std] = normalizeAndPlot_lab1(egf_pM,ints,stdev,saveLoc,titleS
        return;
     end
     yVals = IC50_or_EC50(beta,top,bottom,concs,power);
-    plot(concs,yVals,'b-');
+    plot(concs,yVals+bottom,'b-');
     % make a vertical line at the EC50
     IC50=beta(1);
     EC50Std = getStd( ci, 1, beta );

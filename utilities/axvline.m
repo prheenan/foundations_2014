@@ -1,6 +1,12 @@
-function [ output_args ] = axvline( xVal,yVal,str )
+function [ ax  ] = axvline( xVal,yVal,str )
 %AXVLINE Summary of this function goes here
 %   Detailed explanation goes here
-    plot(xVal.*ones(1,2),2.*[min(yVal) max(yVal)],str);
+    x = xVal.*ones(1,2);
+    y = [min(yVal) max(yVal)];
+    if (iscell(str))
+        ax = plot(x,y,str{:});
+    else
+        ax = plot(x,y,str);
+    end
 end
 

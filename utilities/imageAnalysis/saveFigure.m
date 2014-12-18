@@ -1,4 +1,4 @@
-function [  ] = saveFigure( handle,filename )
+function [  ] = saveFigure( handle,filename,ending )
     % saveas supports only a few things over ssh (nodisplay):
         %   http://www.mathworks.com/help/matlab/ref/saveas.html
     % saveas uses print: http://www.mathworks.com/help/matlab/ref/print.html
@@ -10,8 +10,15 @@ function [  ] = saveFigure( handle,filename )
             %   tiffn (-dtiffn) ? TIFF image file, no compression
     % according to this: http://stackoverflow.com/questions/24803383/save-high-resolution-figures-with-parfor-in-matlab
     % the EPS is pest because of black magic in parallelization
-    saveName = [filename '.eps'];    
-    print(handle,'-dpsc','-r250',saveName);
+    if (nargin < 3)
+        saveStr = '-dpsc';
+        saveName = [filename '.eps'];
+    else
+        % assume PNG for now...
+        saveStr = '-dpng';
+        saveName = [filename '.png'];
+    end
+    print(handle,saveStr,'-r250',saveName);
 
 end
 
